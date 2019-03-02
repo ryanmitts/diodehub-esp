@@ -21,7 +21,7 @@ class LightDelegator {
 public:
 	LightDelegator();
   bool start(int);
-	void handleMessage(JsonObject&);
+	void handleMessage(JsonObject);
   void looper();
 private:
   int numLeds;

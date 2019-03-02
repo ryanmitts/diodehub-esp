@@ -22,7 +22,6 @@
 static unsigned int HEARTBEAT_INTERVAL = 60000;
 static const int CA_CERT_MAX_SIZE = 4096;
 static const int MESSAGE_BUFFER_SIZE = 8192;
-static const char LIGHTS_MESSAGE_EVENT[] = "lights";
 
 unsigned long lastHeartbeatRun;
 
@@ -57,9 +56,12 @@ bool MessageHttpClient::start(char *hostname, char *port, char *clientId, char *
 	auth += ":";
 	auth += clientSecret;
 	webSocketClient->authorization = base64::encode(auth);
-	if (isUsingSSL) {
+	if (isUsingSSL)
+	{
 		wifiClient = new WiFiClientSecure();
-	} else {
+	}
+	else
+	{
 		wifiClient = new WiFiClient();
 	}
 	Serial.println("Done message client start.");
@@ -106,72 +108,70 @@ void MessageHttpClient::stop()
 	started = false;
 }
 
-// Loop and check if we should poll for a new message.
-void MessageHttpClient::looper()
+void MessageHttpClient::checkAndPerformHeartbeat()
 {
 	unsigned long ellapsedHeartbeat = millis() - lastHeartbeatRun;
 	bool res = startSocket();
 	while (res == false)
 	{
 		res = startSocket();
-		delay(100);
 	}
 	if (ellapsedHeartbeat > HEARTBEAT_INTERVAL)
 	{
 		sendHeartbeat();
 		lastHeartbeatRun = millis();
 	}
-
-	if (wifiClient->available())
-	{
-		getMessage();
-	}
-	delay(100);
 }
 
-// Get one message from the server.
-void MessageHttpClient::getMessage()
+bool MessageHttpClient::checkAndReceiveMessage(JsonDocument* jsonBuffer)
 {
-	// Serial.println("Get message.");
-	String rawMessage;
-	webSocketClient->getData(rawMessage);
-	if (!rawMessage.length())
+	bool res = startSocket();
+	while (res == false)
 	{
-		return;
+		res = startSocket();
 	}
-	Serial.println(rawMessage);
-	if (!rawMessage.startsWith("42"))
+	if (wifiClient->available())
 	{
-		Serial.println("Unknown message type.");
-		return;
-	}
-	rawMessage.remove(0, 2);
-	DynamicJsonBuffer jsonBuffer(MESSAGE_BUFFER_SIZE);
-	JsonArray &json = jsonBuffer.parseArray(rawMessage);
-	if (!json.success())
-	{
-		Serial.println("Could not parse message.");
-		return;
-	}
-
-	const char *eventName = json[0].as<char *>();
-	if (strcmp(eventName, LIGHTS_MESSAGE_EVENT) == 0)
-	{
-		if (json[1].is<JsonObject>())
+		String rawMessage;
+		webSocketClient->getData(rawMessage);
+		if (!rawMessage.length())
 		{
-			Serial.println("Firing to the lights delegator");
-			onMessageReceivedSignal.fire(json[1].as<JsonObject>());
+			return false;
 		}
-		else
+		Serial.println(rawMessage);
+		if (!rawMessage.startsWith("42"))
 		{
-			Serial.println("Message is not an object.");
+			Serial.println("Unknown message type.");
+			return false;
 		}
+		rawMessage.remove(0, 2);
+		DeserializationError err = deserializeJson(*jsonBuffer, rawMessage);
+		if (err)
+		{
+			Serial.println("Could not parse message.");
+			return false;
+		}
+		return true;
+		// const char *eventName = json[0].as<char *>();
+		// if (strcmp(eventName, LIGHTS_MESSAGE_EVENT) == 0)
+		// {
+		// 	if (json[1].is<JsonObject>())
+		// 	{
+		// 		return true;
+		// 	}
+		// 	else
+		// 	{
+		// 		Serial.println("Message is not an object.");
+		// 		return false;
+		// 	}
+		// }
+		// else
+		// {
+		// 	Serial.println("Unsupported event.");
+		// 	return false;
+		// }
 	}
-	else
-	{
-		Serial.println("Unsupported event.");
-		return;
-	}
+	return false;
 }
 
 void MessageHttpClient::sendHeartbeat()
@@ -179,14 +179,13 @@ void MessageHttpClient::sendHeartbeat()
 	Serial.println("Send heartbeat.");
 	int freeHeap = ESP.getFreeHeap();
 	double uptime = millis();
-	StaticJsonBuffer<128> jb;
-	JsonObject &heartbeatMsg = jb.createObject();
+	StaticJsonDocument<128> heartbeatMsg;
 	heartbeatMsg["uptime"] = uptime;
 	heartbeatMsg["freeHeap"] = freeHeap;
 	heartbeatMsg["version"] = UpdateHandler::getCurrentVersion();
 	heartbeatMsg["md5"] = UpdateHandler::getCurrentMd5();
 	char serializedMessage[256];
-	heartbeatMsg.printTo(serializedMessage);
+	serializeJson(heartbeatMsg, serializedMessage);
 	String msg = "42[\"heartbeat\", ";
 	msg += String(serializedMessage) + "]";
 	webSocketClient->sendData(msg.c_str(), WS_OPCODE_TEXT);

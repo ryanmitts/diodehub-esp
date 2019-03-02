@@ -2,122 +2,32 @@
 #include <SPIFFS.h>
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiManager.h>
 #include <ArduinoJson.h>
 #include <Callback.h>
 #include "MessageHttpClient.h"
 #include "LightDelegator.h"
 #include "UpdateHandler.h"
-#include <esp_ota_ops.h>
+#include "Settings.h"
+#include "Setup.h"
 
-static const char ssidPrefix[] = "DiodeHub-";
+static const int MESSAGE_BUFFER_SIZE = 8192;
+static const char LIGHTS_MESSAGE_EVENT[] = "lights";
 
-char HOSTNAME[65] = "diodehub.com";
-char PORT[6] = "443";
-char CLIENT_ID[65] = "";
-char CLIENT_SECRET[65] = "";
-char NUM_LEDS[6] = "";
+StaticJsonDocument<MESSAGE_BUFFER_SIZE> jsonMessageBuffer;
+TaskHandle_t xMessageClientTask = NULL;
+TaskHandle_t xLightMessageReceiverTask = NULL;
+TaskHandle_t xLightHandlerTask = NULL;
+QueueHandle_t xLightMessageQueue = xQueueCreate(1, sizeof(JsonDocument*));
 
-WiFiManagerParameter hostname("hostname", "Server Hostname", HOSTNAME, 65, "autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"off\"");
-WiFiManagerParameter port("port", "Server Port", PORT, 6);
-WiFiManagerParameter clientId("clientId", "Client ID", CLIENT_ID, 65, "autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"off\"");
-WiFiManagerParameter clientSecret("clientSecret", "Client Secret", CLIENT_SECRET, 65, "type=\"password\"");
-WiFiManagerParameter numLeds("numLeds", "Number of LEDs", NUM_LEDS, 4);
-
-bool shouldSaveConfig = false;
 bool servicesStarted = false;
 
-MessageHttpClient messageClient;
 LightDelegator lightDelegator;
-MethodSlot<LightDelegator, JsonObject &> onMessageSlot(&lightDelegator, &LightDelegator::handleMessage);
-
-// Read out the stored settings from the flash memory for use.
-void loadSettingsToGlobal()
-{
-	Serial.println("Loading settings to global.");
-	Serial.println("Mounted file system.");
-	if (SPIFFS.exists("/config.json"))
-	{
-		Serial.println("Reading config file.");
-		File configFile = SPIFFS.open("/config.json", "r");
-		if (configFile)
-		{
-			Serial.println("Opened config file.");
-			size_t size = configFile.size();
-			// Allocate a buffer to store contents of the file.
-			std::unique_ptr<char[]> buffer(new char[size]);
-
-			configFile.readBytes(buffer.get(), size);
-			DynamicJsonBuffer jsonBuffer;
-			JsonObject &json = jsonBuffer.parseObject(buffer.get());
-			json.printTo(Serial);
-			if (json.success())
-			{
-				Serial.println("\nParsed json.");
-
-				strcpy(HOSTNAME, json["hostname"]);
-				strcpy(PORT, json["port"]);
-				strcpy(CLIENT_ID, json["clientId"]);
-				strcpy(CLIENT_SECRET, json["clientSecret"]);
-				strcpy(NUM_LEDS, json["numLeds"]);
-			}
-			else
-			{
-				Serial.println("Failed to load json config.");
-			}
-			configFile.close();
-		}
-	}
-	else
-	{
-		Serial.println("Config file does not exist.");
-	}
-}
-
-void saveSettingsFromGlobal()
-{
-	Serial.println("Saving settings from global.");
-	DynamicJsonBuffer jsonBuffer;
-	JsonObject &json = jsonBuffer.createObject();
-	json["hostname"] = HOSTNAME;
-	json["port"] = PORT;
-	json["clientId"] = CLIENT_ID;
-	json["clientSecret"] = CLIENT_SECRET;
-	json["numLeds"] = NUM_LEDS;
-
-	File configFile = SPIFFS.open("/config.json", "w");
-	if (!configFile)
-	{
-		Serial.println("Failed to open config file for writing.");
-	}
-
-	json.printTo(Serial);
-	json.printTo(configFile);
-	configFile.close();
-}
-
-void saveConfigNotifierCallback()
-{
-	shouldSaveConfig = true;
-}
 
 bool startServices()
 {
-	bool messageClientStarted = messageClient.start(HOSTNAME, PORT, CLIENT_ID, CLIENT_SECRET);
-	bool lightDelegatorStarted = lightDelegator.start(atoi(NUM_LEDS));
-	return messageClientStarted && lightDelegatorStarted;
+	return true;
 }
 
-void coreZeroLoop(void *parameters)
-{
-	while (true)
-	{
-		if (servicesStarted)
-		{
-			messageClient.looper();
-		}
-	}
-}
 
 void loop()
 {
@@ -126,6 +36,51 @@ void loop()
 		lightDelegator.looper();
 	}
 	delay(1000);
+}
+
+void messageClientTask(void *parameter) {
+	MessageHttpClient messageClient;
+	messageClient.start(Settings::getInstance()->hostname, Settings::getInstance()->port, Settings::getInstance()->clientId, Settings::getInstance()->clientSecret);
+	for (;;) {
+		messageClient.checkAndPerformHeartbeat();
+		bool hasMessage = messageClient.checkAndReceiveMessage(&jsonMessageBuffer);
+		if (hasMessage) {
+			const char *eventName = jsonMessageBuffer[0];
+			Serial.println("Event name:");
+			Serial.println(eventName);
+			if (strcmp(eventName, LIGHTS_MESSAGE_EVENT) == 0) {
+				JsonDocument *pointerToMessage = &jsonMessageBuffer;
+				if (xQueueSendToBack(xLightMessageQueue, (void *) &pointerToMessage, 0) == pdFALSE) {
+					Serial.println("Could not place light message in it's queue.");
+				} else {
+					Serial.println("Going to wait for the light message to be handled.");
+					ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+					jsonMessageBuffer.clear();
+				}
+
+			}
+		}
+		vTaskDelay(pdMS_TO_TICKS( 500 ));
+	}
+}
+
+void lightMessageReceiverTask(void *parameters) {
+	lightDelegator.start(atoi(Settings::getInstance()->numLeds));
+	JsonDocument *message;
+	for (;;) {
+		if (xQueueReceive(xLightMessageQueue, &(message), portMAX_DELAY)) {
+			Serial.println("Handled light message");
+			lightDelegator.handleMessage((*message)[1]);
+			xTaskNotifyGive(xMessageClientTask);
+		}
+	}
+}
+
+void lightUpdaterTask(void *parameters) {
+	for (;;) {
+		lightDelegator.looper();
+		vTaskDelay(pdMS_TO_TICKS( 5 ));
+	}
 }
 
 void setup()
@@ -147,20 +102,9 @@ void setup()
 		SPIFFS.begin(true);
 	}
 
-	loadSettingsToGlobal();
-
-	String ssid = String(ssidPrefix) + (uint32_t)ESP.getEfuseMac();
-	WiFi.softAPsetHostname(ssid.c_str());
-	WiFiManager wifiManager;
-	wifiManager.setSaveConfigCallback(saveConfigNotifierCallback);
-	wifiManager.addParameter(&hostname);
-	wifiManager.addParameter(&port);
-	wifiManager.addParameter(&clientId);
-	wifiManager.addParameter(&clientSecret);
-	wifiManager.addParameter(&numLeds);
-	if (!wifiManager.autoConnect(ssid.c_str()))
-	{
-		Serial.println("WiFiManager could not connect.");
+	bool connected = Setup::start();
+	if (!connected) {
+		Serial.println("Could not connect tp WiFi or run setup.");
 		delay(3000);
 		ESP.restart();
 		delay(5000);
@@ -179,26 +123,34 @@ void setup()
 	}
 	Serial.println("");
 
-	if (shouldSaveConfig)
-	{
-		strcpy(HOSTNAME, hostname.getValue());
-		strcpy(PORT, port.getValue());
-		strcpy(CLIENT_ID, clientId.getValue());
-		strcpy(CLIENT_SECRET, clientSecret.getValue());
-		strcpy(NUM_LEDS, numLeds.getValue());
-		saveSettingsFromGlobal();
-	}
-
-	servicesStarted = startServices();
+	// servicesStarted = startServices();
 
 	xTaskCreatePinnedToCore(
-		coreZeroLoop,		   /* Function to implement the task */
-		"messageClientLooper", /* Name of the task */
+		messageClientTask,		   /* Function to implement the task */
+		"messageClientTask", /* Name of the task */
 		10000,				   /* Stack size in words */
 		NULL,				   /* Task input parameter */
-		0,					   /* Priority of the task */
-		NULL,				   /* Task handle. */
-		0);					   /* Core where the task should run */
+		configMAX_PRIORITIES / 2,					   /* Priority of the task */
+		&xMessageClientTask,				   /* Task handle. */
+		tskNO_AFFINITY);					   /* Core where the task should run */
+
+	xTaskCreatePinnedToCore(
+		lightMessageReceiverTask,		   /* Function to implement the task */
+		"lightMessageReceiverTask", /* Name of the task */
+		10000,				   /* Stack size in words */
+		NULL,				   /* Task input parameter */
+		configMAX_PRIORITIES / 2,					   /* Priority of the task */
+		&xLightMessageReceiverTask,				   /* Task handle. */
+		tskNO_AFFINITY);					   /* Core where the task should run */
+	
+	xTaskCreatePinnedToCore(
+		lightUpdaterTask,		   /* Function to implement the task */
+		"lightUpdaterTask", /* Name of the task */
+		10000,				   /* Stack size in words */
+		NULL,				   /* Task input parameter */
+		configMAX_PRIORITIES / 2,					   /* Priority of the task */
+		&xLightHandlerTask,				   /* Task handle. */
+		tskNO_AFFINITY);					   /* Core where the task should run */
 
 	Serial.println("Boot setup ran.");
 }

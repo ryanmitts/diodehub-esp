@@ -33,7 +33,6 @@ void LightDelegator::looper() {
     if (currentEffect != NULL) {
         currentEffect->looper();
     }
-    delay(1);
     FastLED.show();
 }
 
@@ -85,7 +84,7 @@ bool fillColorBufferFromArray(JsonArray& colors) {
     int size = colors.size();
     bool passed = true;
     for (int i = 0; i < size; i++) {
-        const char* colorCodeCString = colors.get<char*>(i);
+        const char* colorCodeCString = colors[i];
         if (colorCodeCString == NULL) {
             passed = false;
             break;
@@ -97,25 +96,25 @@ bool fillColorBufferFromArray(JsonArray& colors) {
     return passed;
 }
 
-void LightDelegator::handleMessage(JsonObject& message) {
+void LightDelegator::handleMessage(JsonObject message) {
     Serial.println("Got light message to send");
-    const char* effect = message.get<char*>("effect");
+    const char* effect = message["effect"];
     if (effect == NULL) return;
     if (strcmp(effect, "color") == 0) {
-        JsonVariant colors = message.get<JsonVariant>("colors");
+        JsonVariant colors = message["colors"];
         if (!colors.is<JsonArray>()) return;
-        JsonArray& colorsArray = colors.as<JsonArray>();
+        JsonArray colorsArray = colors.as<JsonArray>();
         if (colorsArray.size() > LED_BUFFER_SIZE * 3) return;
         if (!fillColorBufferFromArray(colorsArray)) return;
         int numColors = colors.size();
 
         bool effectStarted = false;
-        JsonVariant options = message.get<JsonVariant>("options");
+        JsonVariant options = message["options"];
         if (options.is<JsonObject>()) {
-            JsonObject& optionsObject = options.as<JsonObject>();
+            JsonObject optionsObject = options.as<JsonObject>();
             if (optionsObject.containsKey("subEffect")) {
-                const char* subEffect = optionsObject.get<char*>("subEffect");
-                int speed = optionsObject.get<int>("speed");
+                const char* subEffect = optionsObject["subEffect"];
+                int speed = optionsObject["speed"];
                 if (speed > 0) {
                     if (strcmp(subEffect, "rotateRight") == 0) {
                         color.start(ledBuffer, numLeds, colorBuffer, numColors, EffectBase::StandardEffect::ROTATE_RIGHT, speed);
@@ -136,65 +135,65 @@ void LightDelegator::handleMessage(JsonObject& message) {
         }
         currentEffect = &color;
     } else if (strcmp(effect, "fire") == 0) {
-        JsonVariant options = message.get<JsonVariant>("options");
+        JsonVariant options = message["options"];
         int cooling = 50;
         int sparking = 120;
         int speed = 20;
         if (options.is<JsonObject>()) {
-            JsonObject& optionsObject = options.as<JsonObject>();
-            if (optionsObject.containsKey("cooling")) cooling = optionsObject.get<int>("cooling");
-            if (optionsObject.containsKey("sparking")) sparking = optionsObject.get<int>("sparking");
-            if (optionsObject.containsKey("speed")) speed = optionsObject.get<int>("speed");
+            JsonObject optionsObject = options.as<JsonObject>();
+            if (optionsObject.containsKey("cooling")) cooling = optionsObject["cooling"];
+            if (optionsObject.containsKey("sparking")) sparking = optionsObject["sparking"];
+            if (optionsObject.containsKey("speed")) speed = optionsObject["speed"];
         };
         fire.start(ledBuffer, numLeds, cooling, sparking, speed);
         currentEffect = &fire;
     } else if (strcmp(effect, "meteor") == 0) {
         // Repeated, move out;
-        JsonVariant colors = message.get<JsonVariant>("colors");
-        JsonArray& colorsArray = colors.as<JsonArray>();
+        JsonVariant colors = message["colors"];
+        JsonArray colorsArray = colors.as<JsonArray>();
         if (colorsArray.size() > LED_BUFFER_SIZE * 3) return;
         if (!fillColorBufferFromArray(colorsArray)) {
             colorBuffer[0] = CRGB::Red;
         };
 
-        JsonVariant options = message.get<JsonVariant>("options");
+        JsonVariant options = message["options"];
         int meteorSize = 10;
         int meteorTailDecay = 64;
         int speed = 20;
         if (options.is<JsonObject>()) {
-            JsonObject& optionsObject = options.as<JsonObject>();
-            if (optionsObject.containsKey("meteorSize")) meteorSize = optionsObject.get<int>("meteorSize");
-            if (optionsObject.containsKey("meteorTailDecay")) meteorTailDecay = optionsObject.get<int>("meteorTailDecay");
-            if (optionsObject.containsKey("speed")) speed = optionsObject.get<int>("speed");
+            JsonObject optionsObject = options.as<JsonObject>();
+            if (optionsObject.containsKey("meteorSize")) meteorSize = optionsObject["meteorSize"];
+            if (optionsObject.containsKey("meteorTailDecay")) meteorTailDecay = optionsObject["meteorTailDecay"];
+            if (optionsObject.containsKey("speed")) speed = optionsObject["speed"];
         };
 
         meteor.start(ledBuffer, numLeds, colorBuffer[0], meteorSize, meteorTailDecay, speed);
         currentEffect = &meteor;
     } else if (strcmp(effect, "pulseInOut") == 0) {
         // Repeated, move out;
-        JsonVariant colors = message.get<JsonVariant>("colors");
+        JsonVariant colors = message["colors"];
         if (!colors.is<JsonArray>()) return;
-        JsonArray& colorsArray = colors.as<JsonArray>();
+        JsonArray colorsArray = colors.as<JsonArray>();
         if (colorsArray.size() > LED_BUFFER_SIZE * 3) return;
         if (!fillColorBufferFromArray(colorsArray)) return;
         int numColors = colors.size();
 
-        JsonVariant options = message.get<JsonVariant>("options");
+        JsonVariant options = message["options"];
         int speed = 100;
         if (options.is<JsonObject>()) {
-            JsonObject& optionsObject = options.as<JsonObject>();
-            if (optionsObject.containsKey("speed")) speed = optionsObject.get<int>("speed");
+            JsonObject optionsObject = options.as<JsonObject>();
+            if (optionsObject.containsKey("speed")) speed = optionsObject["speed"];
         };
         pulseInOut.start(ledBuffer, numLeds, colorBuffer, numColors, speed);
         currentEffect = &pulseInOut;
     } else if (strcmp(effect, "rainbow") == 0) {
         bool effectStarted = false;
-        JsonVariant options = message.get<JsonVariant>("options");
+        JsonVariant options = message["options"];
         if (options.is<JsonObject>()) {
-            JsonObject& optionsObject = options.as<JsonObject>();
+            JsonObject optionsObject = options.as<JsonObject>();
             if (optionsObject.containsKey("subEffect")) {
-                const char* subEffect = optionsObject.get<char*>("subEffect");
-                int speed = optionsObject.get<int>("speed");
+                const char* subEffect = optionsObject["subEffect"];
+                int speed = optionsObject["speed"];
                 if (speed > 0) {
                     if (strcmp(subEffect, "rotateRight") == 0) {
                         rainbow.start(ledBuffer, numLeds, EffectBase::StandardEffect::ROTATE_RIGHT, speed);
@@ -215,43 +214,43 @@ void LightDelegator::handleMessage(JsonObject& message) {
         }
         currentEffect = &rainbow;
     } else if (strcmp(effect, "randomTwinkle") == 0) {
-        JsonVariant options = message.get<JsonVariant>("options");
+        JsonVariant options = message["options"];
         int speed = 100;
         if (options.is<JsonObject>()) {
-            JsonObject& optionsObject = options.as<JsonObject>();
-            if (optionsObject.containsKey("speed")) speed = optionsObject.get<int>("speed");
+            JsonObject optionsObject = options.as<JsonObject>();
+            if (optionsObject.containsKey("speed")) speed = optionsObject["speed"];
         };
         randomTwinkle.start(ledBuffer, numLeds, speed);
         currentEffect = &randomTwinkle;
     } else if (strcmp(effect, "twinkle") == 0) {
         // Repeated, move out;
-        JsonVariant colors = message.get<JsonVariant>("colors");
+        JsonVariant colors = message["colors"];
         if (!colors.is<JsonArray>()) return;
-        JsonArray& colorsArray = colors.as<JsonArray>();
+        JsonArray colorsArray = colors.as<JsonArray>();
         if (colorsArray.size() > LED_BUFFER_SIZE * 3) return;
         if (!fillColorBufferFromArray(colorsArray)) return;
 
-        JsonVariant options = message.get<JsonVariant>("options");
+        JsonVariant options = message["options"];
         int speed = 100;
         if (options.is<JsonObject>()) {
-            JsonObject& optionsObject = options.as<JsonObject>();
-            if (optionsObject.containsKey("speed")) speed = optionsObject.get<int>("speed");
+            JsonObject optionsObject = options.as<JsonObject>();
+            if (optionsObject.containsKey("speed")) speed = optionsObject["speed"];
         };
         twinkle.start(ledBuffer, numLeds, colorBuffer[0], speed);
         currentEffect = &twinkle;
     } else if (strcmp(effect, "runningColor") == 0) {
         // Repeated, move out;
-        JsonVariant colors = message.get<JsonVariant>("colors");
+        JsonVariant colors = message["colors"];
         if (!colors.is<JsonArray>()) return;
-        JsonArray& colorsArray = colors.as<JsonArray>();
+        JsonArray colorsArray = colors.as<JsonArray>();
         if (colorsArray.size() > LED_BUFFER_SIZE * 3) return;
         if (!fillColorBufferFromArray(colorsArray)) return;
 
-        JsonVariant options = message.get<JsonVariant>("options");
+        JsonVariant options = message["options"];
         int speed = 100;
         if (options.is<JsonObject>()) {
-            JsonObject& optionsObject = options.as<JsonObject>();
-            if (optionsObject.containsKey("speed")) speed = optionsObject.get<int>("speed");
+            JsonObject optionsObject = options.as<JsonObject>();
+            if (optionsObject.containsKey("speed")) speed = optionsObject["speed"];
         };
         runningColor.start(ledBuffer, numLeds, colorBuffer[0], speed);
         currentEffect = &runningColor;

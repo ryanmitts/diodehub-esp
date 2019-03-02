@@ -18,6 +18,7 @@ void EffectBase::start(CRGB* leds, int numLeds, StandardEffect effect, int speed
     this->numLeds = numLeds;
     this->effect = effect;
     this->speed = speed;
+    this->lastFlashOn = true;
 }
 
 void EffectBase::rotateRight() {

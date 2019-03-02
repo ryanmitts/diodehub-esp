@@ -7,7 +7,6 @@
 #include <time.h>
 #include <base64.h>
 #include <ArduinoJson.h> 
-#include "Callback.h"
 #include "UpdateHandler.h"
 
 class MessageHttpClient {
@@ -16,8 +15,8 @@ public:
 	~MessageHttpClient();
 	bool start(char*, char*, char*, char*);
 	void stop();
-	void looper();
-	Signal<JsonObject&> onMessageReceivedSignal;
+	void checkAndPerformHeartbeat();
+	bool checkAndReceiveMessage(JsonDocument*);
 private:
 	bool started = false;
 	char* hostname;
@@ -28,6 +27,5 @@ private:
 	WiFiClient *wifiClient;
 	int isUsingSSL;
 	bool startSocket(bool);
-	void getMessage();
 	void sendHeartbeat();
 };
