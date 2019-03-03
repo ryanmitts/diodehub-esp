@@ -11,7 +11,7 @@
 :root{
 	 /* CSS VARIABLE THEME COLOR */
 	/*--primarycolor:#9933CC;*/
-	--primarycolor:#1fa3ec;
+	--primarycolor:#558EF8;
 }
 
 body.invert,
@@ -34,7 +34,8 @@ body.invert .q[role=img] {
 .c,
 body {
     text-align: center;
-    font-family: verdana
+    font-family: verdana;
+	margin: 0;
 }
 .wrap {
 	text-align:left;
@@ -51,7 +52,6 @@ input {
 	box-sizing: border-box;
 }
 input,button,.msg{
-	border-radius:.3rem;
     width: 100%;
 }
 button,input[type="button"],input[type="submit"] {
@@ -60,6 +60,11 @@ button,input[type="button"],input[type="submit"] {
     color: #fff;
     line-height: 2.4rem;
     font-size: 1.2rem;
+	cursor: pointer;
+	outline: none;
+}
+button:hover,input[type="button"]:hover,input[type="submit"]:hover {
+	filter: brightness(0.9);
 }
 input[type="file"]{
 	border: 1px solid var(--primarycolor);
@@ -165,6 +170,23 @@ td {
 button.D{
 	background-color:#dc3630;
 }
+.header {
+	width: 100%;
+	background-color: #24252a;
+	padding: 8px;
+	margin: 0;
+	height: 64px;
+	display: flex;
+	align-items: middle;
+	box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, 0.2), 0px 4px 5px 0px rgba(0, 0, 0, 0.14), 0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+}
+.logo-link {
+	display: flex;
+}
+.logo {
+	width: 10rem;
+	margin-left: 8px;
+}
 
 </style>
 <!-- /HTTP_STYLE -->
@@ -175,7 +197,12 @@ button.D{
 <!-- /HTTP_SCRIPT -->
 <!-- HTTP_HEAD_END -->
 	</head>
-	<body class="invert">
+	<body>
+		<div class='header'>
+			<a class='logo-link' href='/'>
+				<img class='logo' src='/logo.svg'>
+			</a>
+		</div>
 		<div class='wrap'>
 		<!-- <div class='wrap ql qinv'> -->
 <!-- /HTTP_HEAD_END -->
@@ -253,7 +280,7 @@ button.D{
 			<!-- /HTTP_STATUS_OFFPW -->
 			<!-- HTTP_STATUS_OFFNOAP -->
 				<br/>AP not found
-			<!-- /HTTP_STATUS_OFFNOAP> -->	
+			<!-- /HTTP_STATUS_OFFNOAP -->	
 			<!-- HTTP_STATUS_OFFFAIL -->
 				<br/>Could not Connect
 			<!-- /HTTP_STATUS_OFFFAIL -->	

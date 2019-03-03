@@ -21,6 +21,7 @@
 #endif
 
 #include <vector>
+#include "UpdateHandler.h"
 
 // #define WM_MDNS            // also set MDNS with sethostname
 // #define WM_FIXERASECONFIG  // use erase flash fix
@@ -403,6 +404,7 @@ class WiFiManager
     void          handleErase(boolean opt);
     void          handleParam();
     void          handleWiFiStatus();
+    void          handleDiodeHubLogo();
     void          handleRequest();
     void          handleParamSave();
     void          doParamSave();

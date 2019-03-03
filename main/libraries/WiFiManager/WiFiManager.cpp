@@ -490,6 +490,7 @@ void WiFiManager::setupConfigPortal() {
   server->on(String(FPSTR(R_close)).c_str(),      std::bind(&WiFiManager::handleClose, this));
   server->on(String(FPSTR(R_erase)).c_str(),      std::bind(&WiFiManager::handleErase, this, false));
   server->on(String(FPSTR(R_status)).c_str(),     std::bind(&WiFiManager::handleWiFiStatus, this));
+  server->on(String(FPSTR(R_diodehublogo)).c_str(),     std::bind(&WiFiManager::handleDiodeHubLogo, this));
   server->onNotFound (std::bind(&WiFiManager::handleNotFound, this));
   
   server->begin(); // Web server start
@@ -895,6 +896,7 @@ String WiFiManager::getHTTPHead(String title){
   String page;
   page += FPSTR(HTTP_HEAD_START);
   page.replace(FPSTR(T_v), title);
+  page += FPSTR(HTTP_FAVICON);
   page += FPSTR(HTTP_SCRIPT);
   page += FPSTR(HTTP_STYLE);
   page += _customHeadElement;
@@ -931,7 +933,7 @@ void WiFiManager::handleRoot() {
   page += str;
   page += FPSTR(HTTP_PORTAL_OPTIONS);
   page += getMenuOut();
-  reportStatus(page);
+  // reportStatus(page);
   page += FPSTR(HTTP_END);
 
   server->sendHeader(FPSTR(HTTP_HEAD_CL), String(page.length()));
@@ -973,7 +975,7 @@ void WiFiManager::handleWifi(boolean scan) {
   }
   page += FPSTR(HTTP_FORM_END);
   page += FPSTR(HTTP_SCAN_LINK);
-  reportStatus(page);
+  // reportStatus(page);
   page += FPSTR(HTTP_END);
 
   server->sendHeader(FPSTR(HTTP_HEAD_CL), String(page.length()));
@@ -999,7 +1001,7 @@ void WiFiManager::handleParam(){
 
   page += getParamOut();
   page += FPSTR(HTTP_FORM_END);
-  reportStatus(page);
+  // reportStatus(page);
   page += FPSTR(HTTP_END);
 
   server->sendHeader(FPSTR(HTTP_HEAD_CL), String(page.length()));
@@ -1300,6 +1302,14 @@ void WiFiManager::handleWiFiStatus(){
   server->send(200, FPSTR(HTTP_HEAD_CT), page);
 }
 
+void WiFiManager::handleDiodeHubLogo(){
+  handleRequest();
+  String logo;
+  logo = FPSTR(HTTP_DIODEHUB_LOGO);
+  server->sendHeader(FPSTR(HTTP_HEAD_CL), String(logo.length()));
+  server->send(200, FPSTR(HTTP_HEAD_CT_SVG), logo);
+}
+
 /** 
  * HTTPD CALLBACK save form and redirect to WLAN config page again
  */
@@ -1415,7 +1425,7 @@ void WiFiManager::handleInfo() {
   DEBUG_WM(DEBUG_VERBOSE,F("<- HTTP Info"));
   handleRequest();
   String page = getHTTPHead(FPSTR(S_titleinfo)); // @token titleinfo
-  reportStatus(page);
+  // reportStatus(page);
 
   uint16_t infos = 0;
 
@@ -1455,6 +1465,9 @@ void WiFiManager::handleInfo() {
   #elif defined(ESP32)
     infos = 22;
     String infoids[] = {
+      F("diodehubhead"),
+      F("diodehubversion"),
+      F("diodehubmd5"),
       F("esphead"),
       F("uptime"),
       F("chipid"),
@@ -1501,6 +1514,7 @@ String WiFiManager::getInfoData(String id){
   // @todo add versioning
   if(id==F("esphead"))p = FPSTR(HTTP_INFO_esphead);
   else if(id==F("wifihead"))p = FPSTR(HTTP_INFO_wifihead);
+  else if(id==F("diodehubhead"))p = FPSTR(HTTP_INFO_diodehubhead);
   else if(id==F("uptime")){
     // subject to rollover!
     p = FPSTR(HTTP_INFO_uptime);
@@ -1682,6 +1696,15 @@ String WiFiManager::getInfoData(String id){
     p.replace(FPSTR(T_2),(String)((temperatureRead()+32)*1.8));
   }
   #endif
+  else if(id==F("diodehubversion")) {
+    p = FPSTR(HTTP_INFO_diodehubversion);
+    p.replace(FPSTR(T_1),UpdateHandler::getCurrentVersion());
+  }
+  else if(id==F("diodehubmd5")) {
+    const esp_app_desc_t *appDesc = esp_ota_get_app_description();
+    p = FPSTR(HTTP_INFO_diodehubmd5);
+    p.replace(FPSTR(T_1),UpdateHandler::getCurrentMd5());
+  }
   return p;
 }
 
