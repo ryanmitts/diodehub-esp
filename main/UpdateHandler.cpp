@@ -6,8 +6,6 @@ extern const uint8_t ca_certificates_pem_end[] asm("_binary_ca_certificates_pem_
 String UpdateHandler::currentVersion = "";
 String UpdateHandler::currentMd5 = "";
 
-SemaphoreHandle_t xUpdateLock = NULL;
-
 String UpdateHandler::getCurrentVersion() {
     if (!UpdateHandler::currentVersion.length()) {
         const esp_app_desc_t *appDesc = esp_ota_get_app_description();
@@ -51,8 +49,9 @@ String UpdateHandler::getUpdateLocation() {
     }
 }
 
-bool UpdateHandler::_checkAndUpdate()
+bool UpdateHandler::checkAndUpdate()
 {
+    Serial.println("");
     String updateLocation = getUpdateLocation();
     if (updateLocation.length() == 0) {
         return true;
@@ -64,6 +63,10 @@ bool UpdateHandler::_checkAndUpdate()
     if (!httpClient.begin(client, updateLocation)) {
         Serial.println("Could not connect to update firmware location.");
     }
+
+    const char * headerKeys[] = { "x-amz-meta-md5" };
+    size_t headerKeysSize = sizeof(headerKeys) / sizeof(char*);
+    httpClient.collectHeaders(headerKeys, headerKeysSize);
 
     int statusCode = httpClient.GET();
     int contentLength = httpClient.getSize();
@@ -92,11 +95,14 @@ bool UpdateHandler::_checkAndUpdate()
         return false;
     }
     String md5 = httpClient.header("x-amz-meta-md5");
+    Serial.println("New firmware image MD5:");
+    Serial.println(md5);
     if (md5.length()) {
         if (!Update.setMD5(md5.c_str())) {
             Serial.println("Could not set MD5 from update server response.");
             return false;
         }
+        Serial.println("Will use md5 hash to verify update.");
     }
     // Get MD5 from headers and check it.
     Serial.println("Updating....");
@@ -114,33 +120,4 @@ bool UpdateHandler::_checkAndUpdate()
     }
   
     return false;
-}
-
-void UpdateHandler::checkAndUpdateTask(void *parameter) {
-    TaskHandle_t taskToNotify = (TaskHandle_t) parameter;
-    _checkAndUpdate();
-    xTaskNotifyGive(taskToNotify);
-    vTaskDelete(NULL);
-}
-
-void UpdateHandler::checkAndUpdate() {
-    if (!xUpdateLock) {
-        Serial.println("Creating mutex");
-        xUpdateLock = xSemaphoreCreateMutex();
-    }
-    if (xSemaphoreTake(xUpdateLock, 0) == pdFALSE) {
-        Serial.println("Could not obtain lock on update task, must be already in progress.");
-        return;
-    }
-    xTaskCreate(
-		UpdateHandler::checkAndUpdateTask,
-		"checkAndUpdateTask",
-		10000,
-		xTaskGetCurrentTaskHandle(),
-		configMAX_PRIORITIES - 1,
-		NULL
-	);
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    xSemaphoreGive(xUpdateLock);
-    ESP.restart();
 }

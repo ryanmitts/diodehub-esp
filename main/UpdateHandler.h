@@ -12,10 +12,8 @@ class UpdateHandler {
 public:
     static String getCurrentVersion();
     static String getCurrentMd5();
-    static void checkAndUpdate();
+    static bool checkAndUpdate();
 private:
-    static bool _checkAndUpdate();
-    static void checkAndUpdateTask(void *);
     static String currentVersion;
     static String currentMd5;
     static String getUpdateLocation();

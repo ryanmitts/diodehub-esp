@@ -19,11 +19,24 @@
 
 class LightDelegator {
 public:
-	LightDelegator();
+  static LightDelegator* getInstance(); 
   bool start(int);
 	void handleMessage(JsonObject);
   void looper();
 private:
+  LightDelegator();
+  static LightDelegator* instance;
+  Color color;
+  Fire fire;
+  Meteor meteor;
+  PulseInOut pulseInOut;
+  Rainbow rainbow;
+  RandomTwinkle randomTwinkle;
+  Twinkle twinkle;
+  RunningColor runningColor;
+  CRGB *ledBuffer;
+  CRGB *colorBuffer;
   int numLeds;
   EffectBase* currentEffect;
+  bool fillColorBufferFromArray(JsonArray&);
 };

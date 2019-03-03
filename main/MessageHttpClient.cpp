@@ -19,7 +19,7 @@
 
 #include "esp_tls.h"
 
-static unsigned int HEARTBEAT_INTERVAL = 60000;
+static unsigned int HEARTBEAT_INTERVAL = 10000;
 static const int CA_CERT_MAX_SIZE = 4096;
 static const int MESSAGE_BUFFER_SIZE = 8192;
 
@@ -115,6 +115,7 @@ void MessageHttpClient::checkAndPerformHeartbeat()
 	while (res == false)
 	{
 		res = startSocket();
+		vTaskDelay(pdMS_TO_TICKS( 100 ));
 	}
 	if (ellapsedHeartbeat > HEARTBEAT_INTERVAL)
 	{
