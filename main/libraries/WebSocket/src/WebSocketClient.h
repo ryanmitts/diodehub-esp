@@ -1,8 +1,11 @@
 /*
-Websocket-Arduino, a websocket implementation for Arduino
-Copyright 2011 Per Ejeklint
+Websocket-Arduino, a websocket implementation for Arduino.
+
+Copyright 2019 Ryan Mitts
 
 Based on previous implementations by
+Copyright 2011 Per Ejeklint
+and
 Copyright 2010 Ben Swanson
 and
 Copyright 2010 Randall Brewer
@@ -29,16 +32,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
--------------
-Now based off
-http://www.whatwg.org/specs/web-socket-protocol/
-
-- OLD -
-Currently based off of "The Web Socket protocol" draft (v 75):
-http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-75
 */
-
 
 #ifndef WEBSOCKETCLIENT_H_
 #define WEBSOCKETCLIENT_H_

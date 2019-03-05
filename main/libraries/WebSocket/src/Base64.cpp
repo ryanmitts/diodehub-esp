@@ -1,6 +1,15 @@
-#include "Base64CString.h"
-
-const char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+/*
+ * Copyright (C) 2013 Adam Rudd
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+#include "Base64.h"
+#include <avr/pgmspace.h>
+const char PROGMEM b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz"
 		"0123456789+/";
 
@@ -21,7 +30,7 @@ int base64_encode(char *output, char *input, int inputLen) {
 			a3_to_a4(a4, a3);
 
 			for(i = 0; i < 4; i++) {
-				output[encLen++] = b64_alphabet[a4[i]];
+				output[encLen++] = pgm_read_byte(&b64_alphabet[a4[i]]);
 			}
 
 			i = 0;
@@ -36,7 +45,7 @@ int base64_encode(char *output, char *input, int inputLen) {
 		a3_to_a4(a4, a3);
 
 		for(j = 0; j < i + 1; j++) {
-			output[encLen++] = b64_alphabet[a4[j]];
+			output[encLen++] = pgm_read_byte(&b64_alphabet[a4[j]]);
 		}
 
 		while((i++ < 3)) {
@@ -122,12 +131,10 @@ inline void a4_to_a3(unsigned char * a3, unsigned char * a4) {
 }
 
 inline unsigned char b64_lookup(char c) {
-	int i;
-	for(i = 0; i < 64; i++) {
-		if(b64_alphabet[i] == c) {
-			return i;
-		}
-	}
-
+	if(c >='A' && c <='Z') return c - 'A';
+	if(c >='a' && c <='z') return c - 71;
+	if(c >='0' && c <='9') return c + 4;
+	if(c == '+') return 62;
+	if(c == '/') return 63;
 	return -1;
 }

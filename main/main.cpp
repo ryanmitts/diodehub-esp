@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ArduinoJson.h>
-#include <Callback.h>
 #include <nvs_flash.h>
 #include <driver/gpio.h>
 #include "MessageHttpClient.h"

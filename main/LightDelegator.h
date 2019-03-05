@@ -3,7 +3,6 @@
 #include <string.h>
 #include <Arduino.h>
 #include <SPI.h>
-#include "Callback.h"
 #include <Base64CString.h>
 #include <FastLED.h>
 #include <ArduinoJson.h>
