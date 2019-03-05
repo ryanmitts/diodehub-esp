@@ -1,4 +1,4 @@
-![](https://diodehub.sfo2.digitaloceanspaces.com/diodehub-logo_400x96.png)
+![DiodeHub Logo](logo/diodehub.png)
 
 # DiodeHub ESP32 Firmware
 
