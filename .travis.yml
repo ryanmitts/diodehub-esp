@@ -11,9 +11,6 @@ addons:
       - gperf
       - python
       - python-serial
-      - libncurses-dev
-      - flex
-      - bison
 
 before_install:
   # Save path to the git respository
