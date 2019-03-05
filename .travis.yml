@@ -36,10 +36,10 @@ install:
 
 script:
   # Install Python dependencies.
-  - pip install --user -r /home/travis/esp/esp-idf/requirements.txt
+  - python -m pip install --user -r /home/travis/esp/esp-idf/requirements.txt
   # Go back to the git repository
   - cd $PROJECT_PATH
   # Update configuration so that kconfig doesn't start interactive mode
   - make defconfig
   # Build project from the git repository
-  - make all
+  - make all || make all
