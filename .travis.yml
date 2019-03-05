@@ -14,7 +14,8 @@ python:
   - "3.6"
 
 before_install:
-  - .travis_setup_build_env.sh
+  - chmod +x .travis_setup_build_env.sh
+  - ./.travis_setup_build_env.sh
 
 script:
   - make
