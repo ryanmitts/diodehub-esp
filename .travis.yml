@@ -10,6 +10,9 @@ addons:
       - gperf
       - python
       - python-serial
+      - libncurses-dev
+      - flex
+      - bison
 
 before_install:
   # Save path to the git respository
@@ -42,4 +45,4 @@ script:
   # Update configuration so that kconfig doesn't start interactive mode
   - make defconfig
   # Build project from the git repository
-  - make all || make all
+  - make
