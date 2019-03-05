@@ -21,7 +21,6 @@
 #include <string.h>
 #include <Arduino.h>
 #include <SPI.h>
-#include <Base64.h>
 #include <FastLED.h>
 #include <ArduinoJson.h>
 #include "effects/EffectBase.h"
