@@ -36,7 +36,7 @@ THE SOFTWARE.
 
 #include "WebSocketClient.h"
 #include "sha1.h"
-#include "Base64CString.h"
+#include "base64.h"
 
 bool WebSocketClient::handshake(Client &client) {
 
@@ -71,7 +71,6 @@ bool WebSocketClient::analyzeRequest() {
     unsigned long intkey[2];
     String serverKey;
     char keyStart[17];
-    char b64Key[25];
     String key = "------------------------";
 
     randomSeed(analogRead(0));
@@ -80,7 +79,7 @@ bool WebSocketClient::analyzeRequest() {
         keyStart[i] = (char)random(1, 256);
     }
 
-    base64_encode(b64Key, keyStart, 16);
+    String b64Key = base64::encode((uint8_t *) keyStart, 16);
 
     for (int i=0; i<24; ++i) {
         key[i] = b64Key[i];
@@ -131,7 +130,6 @@ bool WebSocketClient::analyzeRequest() {
     key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     uint8_t *hash;
     char result[21];
-    char b64Result[30];
 
     SHA1Context sha;
     int err;
@@ -147,10 +145,10 @@ bool WebSocketClient::analyzeRequest() {
     }
     result[20] = '\0';
 
-    base64_encode(b64Result, result, 20);
+    String b64Result = base64::encode((uint8_t *) result, 20);
 
     // if the keys match, good to go
-    return serverKey.equals(String(b64Result));
+    return serverKey.equals(b64Result);
 }
 
 
