@@ -1,0 +1,20 @@
+language: python
+sudo: false
+env:
+  ESP32_TOOLCHAIN_URL="https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-61-gab8375a-5.2.0.tar.gz"
+  TOOLCHAIN_DIR="${HOME}/toolchain"
+  ESP32_BINDIR="${TOOLCHAIN_DIR}/xtensa-esp32-elf/bin"
+
+  SDKS_DIR="${HOME}/sdks"
+  IDF_PATH="${SDKS_DIR}/esp-idf"
+  ESP32_IDF_URL="https://github.com/espressif/esp-idf/archive/v2.1.zip"
+  PATH="${PATH}:${ESP32_BINDIR}"
+
+python:
+  - "3.6"
+
+before_install:
+  - ./.travis_setup_build_env.sh
+
+script:
+  - make
