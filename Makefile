@@ -6,4 +6,3 @@
 PROJECT_NAME := diodehub-esp
 PROJECT_VER := 0.0.1
 include $(IDF_PATH)/make/project.mk
-

@@ -3,6 +3,8 @@ Websocket-Arduino, a websocket implementation for Arduino.
 
 Copyright 2019 Ryan Mitts
 
+Changes are part of the license included with DiodeHub ESP (GPLv3).
+
 Based on previous implementations by
 Copyright 2011 Per Ejeklint
 and
