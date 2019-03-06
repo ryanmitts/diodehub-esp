@@ -44,3 +44,18 @@ script:
   - make defconfig
   # Build project from the git repository
   - make
+
+deplay:
+  provider: releases
+  api_key:
+    secure: dERqAQfF8UAotq+GCz5OWhQP805oY2GBYdsJ+Xu3U/yflfjdTN/KGQ0zLFMpVxwL3ff4UD+WT76iZH5DFcMPXWftBFqe9K3FC6M2JCCSI5/T4gQuvfA9hAha+OM4Od26OMyN8lduW8lZWhZzLlGZkhV/5dLdagObi1mZ0cUkMaEAxn+/HgVk2R9UTSn1gWLhKjXTTKH215aMmUI1w0BjfcOEzOJOC1293LVmYOj8Vr9IiDX/SiPbBVaEd4+UQZ/VQ0/ako+aB9yBAGdLFn/deaTLcWcscQWlQpIrWla6IWVu93Uue8rcNs4Kffcm8rF6qC2udURXGS1VivkYYE9zEdLikG9pOvDAw7vEp/LuCIKgh7Dk8iLk4UJPyu3WN0eKhVvyo5M8Oa7ItgJPPuPhuF6fxZoM8diIGvDJYnyiFjO8G3VpH/b1L1usA8ZXotXorWUepsk/ozFDKPdTr9rtJLOxuBCX8yhpxeVxUXvq8j0OEMHuE6IB8cCvD9he51xN5T3iuDyKK+z31NbGRU56yhUTb7YQ3bmaBgHZpM7dpXwnUea9R3ddNwWryL5zfo29I48NRhzEHT2vkhXSYZOYQyQemjZetFjLf9p93H0tqq62mBLBQQP38mvluoZWpN6or+nRQDt2J9amtwsHTKCwMxq6t0cwgwWkTwETK0PPUDE=
+  skip_cleanup: true
+  on:
+    tags: true
+    branch: master
+  draft: true
+  file:
+    - build/ota_data_initial.bin
+    - build/bootloader/bootloader.bin
+    - build/diodehub-esp.bin
+    - build/default.bin
