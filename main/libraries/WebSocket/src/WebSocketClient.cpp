@@ -116,9 +116,9 @@ bool WebSocketClient::analyzeRequest() {
 
         if ((char)bite == '\n') {
             Serial.print("Got Header: " + temp);
-            if (!foundupgrade && temp.startsWith("Upgrade: websocket")) {
+            if (!foundupgrade && (temp.startsWith("Upgrade: websocket") || temp.startsWith("upgrade: websocket"))) {
                 foundupgrade = true;
-            } else if (temp.startsWith("Sec-WebSocket-Accept: ")) {
+            } else if (temp.startsWith("Sec-WebSocket-Accept: ") || temp.startsWith("sec-websocket-accept: ")) {
                 serverKey = temp.substring(22,temp.length() - 2); // Don't save last CR+LF
             }
             temp = "";		

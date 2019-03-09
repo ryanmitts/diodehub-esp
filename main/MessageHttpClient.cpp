@@ -103,7 +103,7 @@ bool MessageHttpClient::startSocket(bool force = false)
 		Serial.println("Could not connect wifi client to host.");
 		return false;
 	};
-	char path[] = "/socket/?EIO=3&transport=websocket";
+	char path[] = "/";
 	webSocketClient->path = path;
 	webSocketClient->host = hostname;
 	Serial.println("Started handshake.");
@@ -198,14 +198,16 @@ void MessageHttpClient::sendHeartbeat()
 	Serial.println("Send heartbeat.");
 	int freeHeap = ESP.getFreeHeap();
 	double uptime = millis();
-	StaticJsonDocument<128> heartbeatMsg;
-	heartbeatMsg["uptime"] = uptime;
-	heartbeatMsg["freeHeap"] = freeHeap;
-	heartbeatMsg["version"] = UpdateHandler::getCurrentVersion();
-	heartbeatMsg["md5"] = UpdateHandler::getCurrentMd5();
+	StaticJsonDocument<256> doc;
+	JsonObject root = doc.to<JsonObject>();
+	root["action"] = "health";
+	JsonObject body = root.createNestedObject("body");
+	body["uptime"] = uptime;
+	body["freeHeap"] = freeHeap;
+	body["version"] = UpdateHandler::getCurrentVersion();
+	body["md5"] = UpdateHandler::getCurrentMd5();
 	char serializedMessage[256];
-	serializeJson(heartbeatMsg, serializedMessage);
-	String msg = "42[\"heartbeat\", ";
-	msg += String(serializedMessage) + "]";
-	webSocketClient->sendData(msg.c_str(), WS_OPCODE_TEXT);
+	serializeJson(root, serializedMessage);
+	Serial.println(serializedMessage);
+	webSocketClient->sendData(serializedMessage, WS_OPCODE_TEXT);
 }

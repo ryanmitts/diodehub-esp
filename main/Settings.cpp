@@ -21,7 +21,7 @@
 Settings* Settings::instance = NULL;
 
 Settings::Settings() {
-    strcpy(hostname, "diodehub.com");
+    strcpy(hostname, "socket.beta.diodehub.com");
     strcpy(port, "443");
     strcpy(clientId, "");
     strcpy(clientSecret, "");
