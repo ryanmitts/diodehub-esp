@@ -36,15 +36,15 @@ extern "C" {
 static const gpio_num_t RESET_PIN = GPIO_NUM_14;
 
 static const int MESSAGE_BUFFER_SIZE = 8192;
-static const char LIGHTS_MESSAGE_EVENT[] = "lights";
+static const char LIGHTS_MESSAGE_EVENT[] = "light";
 static const char UPDATE_MESSAGE_EVENT[] = "update";
 
 StaticJsonDocument<MESSAGE_BUFFER_SIZE> jsonMessageBuffer;
 TaskHandle_t xMessageClientTask = NULL;
 TaskHandle_t xLightMessageReceiverTask = NULL;
 TaskHandle_t xLightHandlerTask = NULL;
-QueueHandle_t xLightMessageQueue = xQueueCreate(1, sizeof(JsonDocument*));
-QueueHandle_t xUpdateMessageQueue = xQueueCreate(1, sizeof(JsonDocument*));
+QueueHandle_t xLightMessageQueue = xQueueCreate(1, sizeof(JsonObject*));
+QueueHandle_t xUpdateMessageQueue = xQueueCreate(1, sizeof(JsonObject*));
 SemaphoreHandle_t xLightControllerLock = xSemaphoreCreateMutex();
 xQueueHandle gpioEventQueue = xQueueCreate(10, sizeof(uint32_t));
 portMUX_TYPE xLockOnInterrupts = portMUX_INITIALIZER_UNLOCKED;
@@ -56,12 +56,14 @@ void messageClientTask(void *parameter) {
 		messageClient.checkAndPerformHeartbeat();
 		bool hasMessage = messageClient.checkAndReceiveMessage(&jsonMessageBuffer);
 		if (hasMessage) {
-			const char *eventName = jsonMessageBuffer[0];
-			Serial.println("Event name:");
-			Serial.println(eventName);
-			JsonDocument *pointerToMessage = &jsonMessageBuffer;
-			if (strcmp(eventName, LIGHTS_MESSAGE_EVENT) == 0) {
-				if (xQueueSendToBack(xLightMessageQueue, (void *) &pointerToMessage, 0) == pdFALSE) {
+			// Breaks when not defined.
+			const char *actionName = jsonMessageBuffer["action"];
+			Serial.println("Action name:");
+			Serial.println(actionName);
+			JsonObject data = jsonMessageBuffer["data"];
+			JsonObject *pointerToData = &data;
+			if (strcmp(actionName, LIGHTS_MESSAGE_EVENT) == 0) {
+				if (xQueueSendToBack(xLightMessageQueue, (void *) &pointerToData, 0) == pdFALSE) {
 					Serial.println("Could not place light message in it's queue.");
 				} else {
 					Serial.println("Going to wait for the light message to be handled.");
@@ -69,8 +71,8 @@ void messageClientTask(void *parameter) {
 					jsonMessageBuffer.clear();
 				}
 
-			} else if (strcmp(eventName, UPDATE_MESSAGE_EVENT) == 0) {
-				if (xQueueSendToBack(xUpdateMessageQueue, (void *) &pointerToMessage, 0) == pdFALSE) {
+			} else if (strcmp(actionName, UPDATE_MESSAGE_EVENT) == 0) {
+				if (xQueueSendToBack(xUpdateMessageQueue, (void *) &pointerToData, 0) == pdFALSE) {
 					Serial.println("Could not place update message in it's queue.");
 				} else {
 					Serial.println("Going to wait for the update message to be handled.");
@@ -91,13 +93,13 @@ void lightMessageReceiverTask(void *parameters) {
 		Serial.println("MR giving lock.");
 		xSemaphoreGive(xLightControllerLock);
 	}
-	JsonDocument *message;
+	JsonObject *message;
 	for (;;) {
 		if (xQueueReceive(xLightMessageQueue, &(message), portMAX_DELAY)) {
 			Serial.println("Handled light message");
 			if (xSemaphoreTake(xLightControllerLock, portMAX_DELAY) == pdTRUE) {\
 				Serial.println("MR obtained lock.");
-				LightDelegator::getInstance()->handleMessage((*message)[1]);
+				LightDelegator::getInstance()->handleMessage(*message);
 				Serial.println("MR giving lock.");
 				xSemaphoreGive(xLightControllerLock);
 				xTaskNotifyGive(xMessageClientTask);
@@ -241,14 +243,14 @@ void app_main()
 		&xLightHandlerTask,				   /* Task handle. */
 		1);					   /* Core where the task should run */
 
-	xTaskCreatePinnedToCore(
-		printFreeHeapTask,		   /* Function to implement the task */
-		"printFreeHeapTask", /* Name of the task */
-		4096,				   /* Stack size in words */
-		NULL,				   /* Task input parameter */
-		4,					   /* Priority of the task */
-		NULL,				   /* Task handle. */
-		1);					   /* Core where the task should run */
+	// xTaskCreatePinnedToCore(
+	// 	printFreeHeapTask,		   /* Function to implement the task */
+	// 	"printFreeHeapTask", /* Name of the task */
+	// 	4096,				   /* Stack size in words */
+	// 	NULL,				   /* Task input parameter */
+	// 	4,					   /* Priority of the task */
+	// 	NULL,				   /* Task handle. */
+	// 	1);					   /* Core where the task should run */
 
 	xTaskCreatePinnedToCore(
 		gpioInterruptHandlerTask,		   /* Function to implement the task */

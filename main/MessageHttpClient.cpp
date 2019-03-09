@@ -37,7 +37,7 @@
 
 #include "esp_tls.h"
 
-static unsigned int HEARTBEAT_INTERVAL = 10000;
+static unsigned int HEARTBEAT_INTERVAL = 60000;
 static const int CA_CERT_MAX_SIZE = 4096;
 static const int MESSAGE_BUFFER_SIZE = 8192;
 
@@ -151,44 +151,19 @@ bool MessageHttpClient::checkAndReceiveMessage(JsonDocument* jsonBuffer)
 	}
 	if (wifiClient->available())
 	{
-		String rawMessage;
-		webSocketClient->getData(rawMessage);
-		if (!rawMessage.length())
+		String message;
+		webSocketClient->getData(message);
+		if (!message.length())
 		{
 			return false;
 		}
-		Serial.println(rawMessage);
-		if (!rawMessage.startsWith("42"))
-		{
-			Serial.println("Unknown message type.");
-			return false;
-		}
-		rawMessage.remove(0, 2);
-		DeserializationError err = deserializeJson(*jsonBuffer, rawMessage);
+		DeserializationError err = deserializeJson(*jsonBuffer, message);
 		if (err)
 		{
 			Serial.println("Could not parse message.");
 			return false;
 		}
 		return true;
-		// const char *eventName = json[0].as<char *>();
-		// if (strcmp(eventName, LIGHTS_MESSAGE_EVENT) == 0)
-		// {
-		// 	if (json[1].is<JsonObject>())
-		// 	{
-		// 		return true;
-		// 	}
-		// 	else
-		// 	{
-		// 		Serial.println("Message is not an object.");
-		// 		return false;
-		// 	}
-		// }
-		// else
-		// {
-		// 	Serial.println("Unsupported event.");
-		// 	return false;
-		// }
 	}
 	return false;
 }
@@ -201,13 +176,12 @@ void MessageHttpClient::sendHeartbeat()
 	StaticJsonDocument<256> doc;
 	JsonObject root = doc.to<JsonObject>();
 	root["action"] = "health";
-	JsonObject body = root.createNestedObject("body");
+	JsonObject body = root.createNestedObject("data");
 	body["uptime"] = uptime;
 	body["freeHeap"] = freeHeap;
 	body["version"] = UpdateHandler::getCurrentVersion();
 	body["md5"] = UpdateHandler::getCurrentMd5();
 	char serializedMessage[256];
 	serializeJson(root, serializedMessage);
-	Serial.println(serializedMessage);
 	webSocketClient->sendData(serializedMessage, WS_OPCODE_TEXT);
 }

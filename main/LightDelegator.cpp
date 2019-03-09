@@ -137,6 +137,8 @@ void LightDelegator::handleMessage(JsonObject message)
 {
     Serial.println("Got light message to send");
     const char *effect = message["effect"];
+    Serial.println("Got effect:");
+    Serial.println(effect);
     if (effect == NULL)
         return;
     if (strcmp(effect, "color") == 0)
