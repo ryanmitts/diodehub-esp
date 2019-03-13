@@ -46,4 +46,5 @@ private:
 	int isUsingSSL;
 	bool startSocket(bool);
 	void sendHeartbeat();
+	void sendPong();
 };

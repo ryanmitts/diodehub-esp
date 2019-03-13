@@ -40,6 +40,7 @@
 static unsigned int HEARTBEAT_INTERVAL = 60000;
 static const int CA_CERT_MAX_SIZE = 4096;
 static const int MESSAGE_BUFFER_SIZE = 8192;
+static const char PONG[] = "pong";
 
 unsigned long lastHeartbeatRun;
 
@@ -133,7 +134,7 @@ void MessageHttpClient::checkAndPerformHeartbeat()
 	while (res == false)
 	{
 		res = startSocket();
-		vTaskDelay(pdMS_TO_TICKS( 100 ));
+		vTaskDelay(pdMS_TO_TICKS(100));
 	}
 	if (ellapsedHeartbeat > HEARTBEAT_INTERVAL)
 	{
@@ -142,7 +143,12 @@ void MessageHttpClient::checkAndPerformHeartbeat()
 	}
 }
 
-bool MessageHttpClient::checkAndReceiveMessage(JsonDocument* jsonBuffer)
+void MessageHttpClient::sendPong()
+{
+	webSocketClient->sendData(PONG, WS_OPCODE_PONG);
+}
+
+bool MessageHttpClient::checkAndReceiveMessage(JsonDocument *jsonBuffer)
 {
 	bool res = startSocket();
 	while (res == false)
@@ -152,18 +158,32 @@ bool MessageHttpClient::checkAndReceiveMessage(JsonDocument* jsonBuffer)
 	if (wifiClient->available())
 	{
 		String message;
-		webSocketClient->getData(message);
-		if (!message.length())
+		uint8_t opcode;
+		webSocketClient->getData(message, &opcode);
+		if (opcode == WS_OPCODE_TEXT)
 		{
-			return false;
+			Serial.println("Got text frame.");
+			if (!message.length())
+			{
+				Serial.println("No data.");
+				return false;
+			}
+			DeserializationError err = deserializeJson(*jsonBuffer, message);
+			if (err)
+			{
+				Serial.println("Could not parse message.");
+				return false;
+			}
+			return true;
 		}
-		DeserializationError err = deserializeJson(*jsonBuffer, message);
-		if (err)
+		else if (opcode == WS_OPCODE_PING)
 		{
-			Serial.println("Could not parse message.");
-			return false;
+			sendPong();
 		}
-		return true;
+		else
+		{
+			Serial.println("Unsupported websocket opcode.");
+		}
 	}
 	return false;
 }
