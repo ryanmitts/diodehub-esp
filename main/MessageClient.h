@@ -27,10 +27,10 @@
 #include <ArduinoJson.h> 
 #include "UpdateHandler.h"
 
-class MessageHttpClient {
+class MessageClient {
 public:
-  MessageHttpClient();
-	~MessageHttpClient();
+  MessageClient();
+	~MessageClient();
 	bool start(char*, char*, char*, char*);
 	void stop();
 	void checkAndPerformHeartbeat();

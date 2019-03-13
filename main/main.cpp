@@ -23,7 +23,7 @@
 #include <ArduinoJson.h>
 #include <nvs_flash.h>
 #include <driver/gpio.h>
-#include "MessageHttpClient.h"
+#include "MessageClient.h"
 #include "LightDelegator.h"
 #include "UpdateHandler.h"
 #include "Settings.h"
@@ -50,7 +50,7 @@ xQueueHandle gpioEventQueue = xQueueCreate(10, sizeof(uint32_t));
 portMUX_TYPE xLockOnInterrupts = portMUX_INITIALIZER_UNLOCKED;
 
 void messageClientTask(void *parameter) {
-	MessageHttpClient messageClient;
+	MessageClient messageClient;
 	messageClient.start(Settings::getInstance()->hostname, Settings::getInstance()->port, Settings::getInstance()->clientId, Settings::getInstance()->clientSecret);
 	for (;;) {
 		messageClient.checkAndPerformHeartbeat();

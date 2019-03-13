@@ -18,7 +18,7 @@
 
 #include <FS.h>
 #include <SPIFFS.h>
-#include "MessageHttpClient.h"
+#include "MessageClient.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -49,21 +49,21 @@ extern const uint8_t ca_certificates_pem_end[] asm("_binary_ca_certificates_pem_
 
 esp_tls_cfg_t cfg;
 
-MessageHttpClient::MessageHttpClient()
+MessageClient::MessageClient()
 {
 	cfg.cacert_pem_buf = ca_certificates_pem_start;
 	cfg.cacert_pem_bytes = ca_certificates_pem_end - ca_certificates_pem_start;
 	isUsingSSL = true;
 }
 
-MessageHttpClient::~MessageHttpClient()
+MessageClient::~MessageClient()
 {
 	delete wifiClient;
 	delete webSocketClient;
 }
 
 // Start the message client with the passed in credentials.
-bool MessageHttpClient::start(char *hostname, char *port, char *clientId, char *clientSecret)
+bool MessageClient::start(char *hostname, char *port, char *clientId, char *clientSecret)
 {
 	Serial.println(String("Message client starting with hostname: ") + hostname);
 	webSocketClient = new WebSocketClient();
@@ -88,7 +88,7 @@ bool MessageHttpClient::start(char *hostname, char *port, char *clientId, char *
 	return started;
 }
 
-bool MessageHttpClient::startSocket(bool force = false)
+bool MessageClient::startSocket(bool force = false)
 {
 	if (!force && wifiClient->connected())
 	{
@@ -121,13 +121,13 @@ bool MessageHttpClient::startSocket(bool force = false)
 }
 
 // Stop this controller.
-void MessageHttpClient::stop()
+void MessageClient::stop()
 {
 	wifiClient->stop();
 	started = false;
 }
 
-void MessageHttpClient::checkAndPerformHeartbeat()
+void MessageClient::checkAndPerformHeartbeat()
 {
 	unsigned long ellapsedHeartbeat = millis() - lastHeartbeatRun;
 	bool res = startSocket();
@@ -143,12 +143,12 @@ void MessageHttpClient::checkAndPerformHeartbeat()
 	}
 }
 
-void MessageHttpClient::sendPong()
+void MessageClient::sendPong()
 {
 	webSocketClient->sendData(PONG, WS_OPCODE_PONG);
 }
 
-bool MessageHttpClient::checkAndReceiveMessage(JsonDocument *jsonBuffer)
+bool MessageClient::checkAndReceiveMessage(JsonDocument *jsonBuffer)
 {
 	bool res = startSocket();
 	while (res == false)
@@ -188,7 +188,7 @@ bool MessageHttpClient::checkAndReceiveMessage(JsonDocument *jsonBuffer)
 	return false;
 }
 
-void MessageHttpClient::sendHeartbeat()
+void MessageClient::sendHeartbeat()
 {
 	Serial.println("Send heartbeat.");
 	int freeHeap = ESP.getFreeHeap();
