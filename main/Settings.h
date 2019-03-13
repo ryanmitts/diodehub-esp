@@ -30,6 +30,7 @@ public:
     char port[6];
     char clientId[65];
     char clientSecret[65];
+    char server[65];
     char numLeds[6];
     void loadSettings();
     void saveSettings();

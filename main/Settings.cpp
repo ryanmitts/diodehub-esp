@@ -21,7 +21,7 @@
 Settings* Settings::instance = NULL;
 
 Settings::Settings() {
-    strcpy(hostname, "socket.beta.diodehub.com");
+    strcpy(hostname, "socket.diodehub.com");
     strcpy(port, "443");
     strcpy(clientId, "");
     strcpy(clientSecret, "");
@@ -59,6 +59,7 @@ void Settings::loadSettings()
 
 				strcpy(clientId, jsonBuffer["clientId"]);
 				strcpy(clientSecret, jsonBuffer["clientSecret"]);
+				strcpy(hostname, jsonBuffer["hostname"]);
 				strcpy(numLeds, jsonBuffer["numLeds"]);
 			}
 			else
@@ -80,6 +81,7 @@ void Settings::saveSettings()
 	StaticJsonDocument<512> jsonBuffer;
 	jsonBuffer["clientId"] = clientId;
 	jsonBuffer["clientSecret"] = clientSecret;
+	jsonBuffer["hostname"] = hostname;
 	jsonBuffer["numLeds"] = numLeds;
 
 	File configFile = SPIFFS.open("/config.json", "w");

@@ -32,6 +32,7 @@ bool Setup::start() {
     WiFiManager wifiManager;
     WiFiManagerParameter clientId("clientId", "Client ID", Settings::getInstance()->clientId, 65, "autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"off\"");
     WiFiManagerParameter clientSecret("clientSecret", "Client Secret", Settings::getInstance()->clientSecret, 65, "type=\"password\"");
+	WiFiManagerParameter server("server", "Server", Settings::getInstance()->hostname, 65);
     WiFiManagerParameter numLeds("numLeds", "Number of LEDs", Settings::getInstance()->numLeds, 4);
 
     String ssid = String(ssidPrefix) + (uint32_t)ESP.getEfuseMac();
@@ -39,6 +40,7 @@ bool Setup::start() {
 	wifiManager.setSaveConfigCallback(saveConfigNotifierCallback);
 	wifiManager.addParameter(&clientId);
 	wifiManager.addParameter(&clientSecret);
+	wifiManager.addParameter(&server);
 	wifiManager.addParameter(&numLeds);
 	if (!wifiManager.autoConnect(ssid.c_str()))
 	{
@@ -50,6 +52,7 @@ bool Setup::start() {
 	{
 		strcpy(Settings::getInstance()->clientId, clientId.getValue());
 		strcpy(Settings::getInstance()->clientSecret, clientSecret.getValue());
+		strcpy(Settings::getInstance()->hostname, server.getValue());
 		strcpy(Settings::getInstance()->numLeds, numLeds.getValue());
 		Settings::getInstance()->saveSettings();
 	}
