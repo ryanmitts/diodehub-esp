@@ -134,7 +134,7 @@ void MessageClient::checkAndPerformHeartbeat()
 	while (res == false)
 	{
 		res = startSocket();
-		vTaskDelay(pdMS_TO_TICKS(100));
+		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 	if (ellapsedHeartbeat > HEARTBEAT_INTERVAL)
 	{
@@ -154,6 +154,7 @@ bool MessageClient::checkAndReceiveMessage(JsonDocument *jsonBuffer)
 	while (res == false)
 	{
 		res = startSocket();
+		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 	if (wifiClient->available())
 	{
