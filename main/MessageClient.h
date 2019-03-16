@@ -37,6 +37,7 @@ public:
 	bool checkAndReceiveMessage(JsonDocument*);
 private:
 	bool started = false;
+	bool firstInitDone = false;
 	char* hostname;
 	char* port;
 	char* clientId;
@@ -47,4 +48,5 @@ private:
 	bool startSocket(bool);
 	void sendHeartbeat();
 	void sendPong();
+	void sendReady();
 };

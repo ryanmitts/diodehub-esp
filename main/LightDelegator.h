@@ -39,6 +39,7 @@ public:
   bool start(int);
 	void handleMessage(JsonObject);
   void looper();
+  bool started = false;
 private:
   LightDelegator();
   static LightDelegator* instance;

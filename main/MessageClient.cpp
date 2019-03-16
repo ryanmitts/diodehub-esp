@@ -41,6 +41,7 @@ static unsigned int HEARTBEAT_INTERVAL = 60000;
 static const int CA_CERT_MAX_SIZE = 4096;
 static const int MESSAGE_BUFFER_SIZE = 8192;
 static const char PONG[] = "pong";
+static const char READY_MESSAGE[] = "{\"action\":\"ready\"}";
 
 unsigned long lastHeartbeatRun;
 
@@ -111,6 +112,11 @@ bool MessageClient::startSocket(bool force = false)
 	if (webSocketClient->handshake(*wifiClient))
 	{
 		Serial.println("Handshake passed.");
+		if (!this->firstInitDone) {
+			sendReady();
+			this->firstInitDone = true;
+		}
+		
 		return true;
 	}
 	else
@@ -164,6 +170,7 @@ bool MessageClient::checkAndReceiveMessage(JsonDocument *jsonBuffer)
 		if (opcode == WS_OPCODE_TEXT)
 		{
 			Serial.println("Got text frame.");
+			Serial.println(message);
 			if (!message.length())
 			{
 				Serial.println("No data.");
@@ -205,4 +212,9 @@ void MessageClient::sendHeartbeat()
 	char serializedMessage[256];
 	serializeJson(root, serializedMessage);
 	webSocketClient->sendData(serializedMessage, WS_OPCODE_TEXT);
+}
+
+void MessageClient::sendReady()
+{
+	webSocketClient->sendData(READY_MESSAGE, WS_OPCODE_TEXT);
 }

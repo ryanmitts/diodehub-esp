@@ -47,6 +47,8 @@ bool LightDelegator::start(int numLeds)
     this->numLeds = numLeds;
     FastLED.addLeds<WS2812B, LED_PIN, GRB>(ledBuffer, numLeds).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(BRIGHTNESS);
+    fill_solid(colorBuffer, LED_BUFFER_SIZE, CRGB::Black);
+    this->started = true;
     Serial.println("Light delegator started.");
     return true;
 }
