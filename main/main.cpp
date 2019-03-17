@@ -167,7 +167,7 @@ void checkAndHandleReset()
 	if (level == 0)
 	{
 		WiFi.disconnect(true, true);
-		vTaskDelay(pdMS_TO_TICKS(500));
+		vTaskDelay(pdMS_TO_TICKS(100));
 		ESP.restart();
 	}
 }
@@ -195,10 +195,10 @@ void waitForUpdateTask(void *parameter)
 {
 	for (;;)
 	{
-		JsonDocument *message;
+		JsonObject *message;
 		if (xQueueReceive(xUpdateMessageQueue, &(message), portMAX_DELAY))
 		{
-			bool res = UpdateHandler::checkAndUpdate();
+			bool res = UpdateHandler::update(*message);
 			if (res)
 			{
 				Serial.println("Updated.");
@@ -208,7 +208,6 @@ void waitForUpdateTask(void *parameter)
 			{
 				Serial.println("Did not update.");
 			}
-			xTaskNotifyGive(xMessageClientTask);
 		}
 	}
 }

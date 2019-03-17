@@ -19,6 +19,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <WiFiClient.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
@@ -30,9 +31,8 @@ class UpdateHandler {
 public:
     static String getCurrentVersion();
     static String getCurrentMd5();
-    static bool checkAndUpdate();
+    static bool update(JsonObject message);
 private:
     static String currentVersion;
     static String currentMd5;
-    static String getUpdateLocation();
 };
